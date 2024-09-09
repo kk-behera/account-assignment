@@ -20,15 +20,14 @@ public class AccountsService {
 
   @Getter
   private final AccountsRepository accountsRepository;
-
-  private final NotificationService notificationService;
+ @Autowired
+  private NotificationService notificationService;
 
   private final ConcurrentHashMap<String, ReentrantLock> locks = new ConcurrentHashMap<>();
 
   @Autowired
-  public AccountsService(AccountsRepository accountsRepository, NotificationService notificationService) {
+  public AccountsService(AccountsRepository accountsRepository) {
     this.accountsRepository = accountsRepository;
-      this.notificationService = notificationService;
   }
 
   public void createAccount(Account account) {
@@ -41,10 +40,7 @@ public class AccountsService {
 
   public void transferAmount(TransferRequest transferRequest) {
 
-    ReadWriteLock reentrantLock = new ReentrantReadWriteLock();
-
     BigDecimal amount = transferRequest.getAmount();
-    Lock lock = reentrantLock.writeLock();
 
     ReentrantLock lockFrom = locks.computeIfAbsent(transferRequest.getFromAccountId(), id -> new ReentrantLock());
     ReentrantLock lockTo = locks.computeIfAbsent(transferRequest.getToAccountId(), id -> new ReentrantLock());

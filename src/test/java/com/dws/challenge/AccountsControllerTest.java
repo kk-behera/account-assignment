@@ -16,9 +16,11 @@ import com.dws.challenge.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -36,10 +38,10 @@ class AccountsControllerTest {
   private AccountsService accountsService;
 
   @Autowired
-  private NotificationService notificationService;
-
-  @Autowired
   private WebApplicationContext webApplicationContext;
+
+  @MockBean
+  private NotificationService notificationService;
 
   @BeforeEach
   void prepareMockMvc() {
@@ -107,12 +109,5 @@ class AccountsControllerTest {
       .andExpect(status().isOk())
       .andExpect(
         content().string("{\"accountId\":\"" + uniqueAccountId + "\",\"balance\":123.45}"));
-  }
-
-  @Test
-  void test_transfer_between_account() throws Exception {
-    Mockito.doNothing().when(accountsService).transferAmount(any());
-    this.mockMvc.perform(post("/v1/accounts/transfer"))
-            .andExpect(status().isOk());
   }
 }

@@ -46,7 +46,7 @@ public class AccountsController {
 
   @PostMapping(path = "/transfer")
   public void transferAmount(@RequestBody TransferRequest transferRequest) {
-    log.info("Transfer request account for id {}", transferRequest);
+    log.info("Transfer request received for {}", transferRequest);
      this.accountsService.transferAmount(transferRequest);
   }
 
