@@ -1,6 +1,7 @@
 package com.dws.challenge;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -11,9 +12,11 @@ import java.math.BigDecimal;
 
 import com.dws.challenge.domain.Account;
 import com.dws.challenge.service.AccountsService;
+import com.dws.challenge.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -31,6 +34,9 @@ class AccountsControllerTest {
 
   @Autowired
   private AccountsService accountsService;
+
+  @Autowired
+  private NotificationService notificationService;
 
   @Autowired
   private WebApplicationContext webApplicationContext;
@@ -105,6 +111,7 @@ class AccountsControllerTest {
 
   @Test
   void test_transfer_between_account() throws Exception {
+    Mockito.doNothing().when(accountsService).transferAmount(any());
     this.mockMvc.perform(post("/v1/accounts/transfer"))
             .andExpect(status().isOk());
   }
