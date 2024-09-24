@@ -20,7 +20,7 @@ public class AccountsService {
 
   @Getter
   private final AccountsRepository accountsRepository;
- @Autowired
+  @Autowired
   private NotificationService notificationService;
 
   private final ConcurrentHashMap<String, ReentrantLock> locks = new ConcurrentHashMap<>();
@@ -40,41 +40,45 @@ public class AccountsService {
 
   public void transferAmount(TransferRequest transferRequest) {
 
-    BigDecimal amount = transferRequest.getAmount();
+      BigDecimal amount = transferRequest.getAmount();
 
-    ReentrantLock lockFrom = locks.computeIfAbsent(transferRequest.getFromAccountId(), id -> new ReentrantLock());
-    ReentrantLock lockTo = locks.computeIfAbsent(transferRequest.getToAccountId(), id -> new ReentrantLock());
+      ReentrantLock lockFrom = locks.computeIfAbsent(transferRequest.getFromAccountId(), id -> new ReentrantLock());
+      ReentrantLock lockTo = locks.computeIfAbsent(transferRequest.getToAccountId(), id -> new ReentrantLock());
 
-    // Ensure a consistent ordering of locks to prevent deadlock
-    ReentrantLock firstLock = lockFrom.hashCode() < lockTo.hashCode() ? lockFrom : lockTo;
-    ReentrantLock secondLock = lockFrom.hashCode() < lockTo.hashCode() ? lockTo : lockFrom;
+      // Ensure a consistent ordering of locks to prevent deadlock
+      ReentrantLock firstLock = lockFrom.hashCode() < lockTo.hashCode() ? lockFrom : lockTo;
+      ReentrantLock secondLock = lockFrom.hashCode() < lockTo.hashCode() ? lockTo : lockFrom;
 
-    firstLock.lock();
-    try {
-      secondLock.lock();
+      boolean lockAcquired = false;
+
       try {
-        Account fromAccount = getAccount(transferRequest.getFromAccountId());
-        Account toAccount = getAccount(transferRequest.getToAccountId());
+          firstLock.lock();
+          secondLock.lock();
+          lockAcquired = true;
 
-        if (fromAccount.getBalance().compareTo(transferRequest.getAmount()) < 0) {
-          throw new InsufficientFundsException("Insufficient funds in account: " + fromAccount);
-        }
+          Account fromAccount = getAccount(transferRequest.getFromAccountId());
+          Account toAccount = getAccount(transferRequest.getToAccountId());
 
-        BigDecimal updatedFromAccountBalance = fromAccount.getBalance().subtract(amount);
-        fromAccount.setBalance(updatedFromAccountBalance);
-        accountsRepository.updateAccount(fromAccount);
+          if (fromAccount.getBalance().compareTo(transferRequest.getAmount()) < 0) {
+              throw new InsufficientFundsException("Insufficient funds in account: " + fromAccount);
+          }
 
-        BigDecimal updatedToAccountBalance = toAccount.getBalance().add(amount);
-        toAccount.setBalance(updatedToAccountBalance);
-        accountsRepository.updateAccount(toAccount);
-        this.notificationService.notifyAboutTransfer(toAccount, "Amount of "+ amount +" successfully transferred from "+transferRequest.getFromAccountId());
+          BigDecimal updatedFromAccountBalance = fromAccount.getBalance().subtract(amount);
+          fromAccount.setBalance(updatedFromAccountBalance);
+          accountsRepository.updateAccount(fromAccount);
+
+          BigDecimal updatedToAccountBalance = toAccount.getBalance().add(amount);
+          toAccount.setBalance(updatedToAccountBalance);
+          accountsRepository.updateAccount(toAccount);
+          this.notificationService.notifyAboutTransfer(toAccount, "Amount of " + amount + " successfully transferred from " + transferRequest.getFromAccountId());
+
 
       } finally {
-        secondLock.unlock();
+          if (lockAcquired) {
+              secondLock.unlock();
+              firstLock.unlock();
+          }
       }
-    } finally {
-      firstLock.unlock();
-    }
 
   }
 }
